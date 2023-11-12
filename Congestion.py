@@ -126,22 +126,22 @@ def main():
         graph.add_node(i, i == 1 or i == 6 or i == 3)  # Nodes 1, 6, and 3 are intersections.
 
     # Define edges between nodes.
-    #TEST CASE 1    vehicles = [Vehicle(1, 5)]
-    # graph.add_edge(1, 2)
-    # graph.add_edge(2, 3)
-    # graph.add_edge(3, 4)
-    # graph.add_edge(3, 5)
-    # graph.add_edge(4, 5)
-    # graph.add_edge(5, 6)
-    # graph.add_edge(6, 1)
-
-    #TEST CASE 2         vehicles = [Vehicle(1, 5), Vehicle(5, 1), Vehicle(3, 5)]
+    #TEST CASE 1    THERE'S 2 POSSIBLE PATHS FOR VEHILE 1, vehicles = [Vehicle(1, 5)]
     graph.add_edge(1, 2)
     graph.add_edge(2, 3)
     graph.add_edge(3, 4)
+    graph.add_edge(3, 5)
     graph.add_edge(4, 5)
     graph.add_edge(5, 6)
     graph.add_edge(6, 1)
+
+    #TEST CASE 2         vehicles = [Vehicle(1, 5), Vehicle(5, 1), Vehicle(3, 5)]
+    # graph.add_edge(1, 2)
+    # graph.add_edge(2, 3)
+    # graph.add_edge(3, 4)
+    # graph.add_edge(4, 5)
+    # graph.add_edge(5, 6)
+    # graph.add_edge(6, 1)
 
 
 
