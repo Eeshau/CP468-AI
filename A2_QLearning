@@ -1,0 +1,144 @@
+import random
+
+# Edge class represents a road segment between two nodes
+class Edge:
+    def __init__(self):
+        self.vehicles = 0  # Number of vehicles currently on the edge
+        self.q_value = 0   # Q-value for Q-learning, representing the quality of this edge
+
+    # Method to simulate a vehicle entering this edge
+    def enter(self):
+        self.vehicles += 1
+
+    # Method to simulate a vehicle exiting this edge
+    def exit(self):
+        self.vehicles -= 1
+        if self.vehicles < 0:
+            self.vehicles = 0
+
+# Node class represents intersections or points in the road network
+class Node:
+    def __init__(self, id, is_intersection):
+        self.id = id  # Unique identifier for the node
+        self.is_intersection = is_intersection  # Boolean flag to determine if this node is an intersection
+        self.edges = {}  # Dictionary to store connected edges
+
+    # Method to add an edge to this node
+    def add_edge(self, end):
+        self.edges[end] = Edge()
+
+# Vehicle class represents a vehicle in the network
+class Vehicle:
+    def __init__(self, start, end):
+        self.current_node = start  # Node where the vehicle starts
+        self.destination = end     # Destination node of the vehicle
+        self.time = 0              # Total time the vehicle has spent so far
+        self.path = []             # Path taken by the vehicle
+
+# Graph class represents the entire road network
+class Graph:
+    def __init__(self):
+        self.nodes = {}  # Dictionary to store all nodes
+
+    # Method to add a node to the graph
+    def add_node(self, id, is_intersection):
+        self.nodes[id] = Node(id, is_intersection)
+
+    # Method to add an edge between two nodes
+    def add_edge(self, start, end):
+        if start in self.nodes and end in self.nodes:
+            self.nodes[start].add_edge(end)
+
+# Function to calculate the travel time for an edge
+def travel_time(graph, start, end):
+    base_time = 1  # Base travel time for any edge
+    # Additional delay due to congestion
+    edge_delay = graph.nodes[start].edges[end].vehicles * 0.01
+    # Additional delay if the end node is an intersection
+    node_delay = 3 if graph.nodes[end].is_intersection else 0
+    return base_time + edge_delay + node_delay
+
+# Function to update the Q-value of an edge in the graph
+def update_q_value(graph, current, next_node, learning_rate, discount_factor):
+    # Current Q-value of the edge
+    current_q_value = graph.nodes[current].edges[next_node].q_value
+    # Maximum future Q-value from the next node
+    future_rewards = max((edge.q_value for edge in graph.nodes[next_node].edges.values()), default=0)
+    # Reward is the negative of the travel time (we aim to minimize travel time)
+    reward = -travel_time(graph, current, next_node)
+    # Q-learning update rule
+    updated_q_value = current_q_value + learning_rate * (reward + discount_factor * future_rewards - current_q_value)
+    graph.nodes[current].edges[next_node].q_value = updated_q_value
+
+# Function to choose the next node based on Q-values and exploration factor
+def choose_next_node(graph, current, epsilon):
+    if random.uniform(0, 1) < epsilon:  # Exploration: choose randomly
+        return random.choice(list(graph.nodes[current].edges.keys()))
+    else:  # Exploitation: choose the best Q-value
+        if graph.nodes[current].edges:
+            return max(graph.nodes[current].edges, key=lambda end_node: graph.nodes[current].edges[end_node].q_value)
+        else:
+            return random.choice(list(graph.nodes.keys()))
+
+# Q-learning simulation: iterates over multiple episodes to update Q-values
+def q_learning_simulation(graph, vehicles, episodes, learning_rate, discount_factor, epsilon):
+    for _ in range(episodes):
+        for vehicle in vehicles:
+            current = vehicle.current_node
+            while current != vehicle.destination:
+                next_node = choose_next_node(graph, current, epsilon)
+                update_q_value(graph, current, next_node, learning_rate, discount_factor)
+                current = next_node
+
+# Simulate the movement of a vehicle and calculate its travel time
+def simulate_vehicle_movement(graph, vehicle):
+    current = vehicle.current_node
+    while current != vehicle.destination:
+        next_node = choose_next_node(graph, current, 0)  # Use only exploitation
+        graph.nodes[current].edges[next_node].enter()
+        vehicle.time += travel_time(graph, current, next_node)
+        vehicle.path.append((current, next_node))
+        current = next_node
+        # Ensure to exit the edge properly
+        if current in graph.nodes and next_node in graph.nodes[current].edges:
+            graph.nodes[current].edges[next_node].exit()
+
+# Main function to run the simulation
+def main():
+    graph = Graph()
+    # Initialize graph with nodes and edges
+    for i in range(1, 7):
+        graph.add_node(i, i == 1 or i == 6 or i == 3)
+    graph.add_edge(1, 2)
+    graph.add_edge(2, 3)
+    graph.add_edge(3, 4)
+    graph.add_edge(3, 5)
+    graph.add_edge(4, 5)
+    graph.add_edge(5, 6)
+    graph.add_edge(6, 1)
+
+    # Initialize vehicles
+    vehicles = [Vehicle(1, 5), Vehicle(5, 1), Vehicle(3, 5)]
+
+    # Set Q-learning parameters
+    learning_rate = 0.5
+    discount_factor = 0.9
+    epsilon = 0.1  # Exploration rate
+    episodes = 100  # Number of episodes for learning
+
+    # Run Q-learning simulation
+    q_learning_simulation(graph, vehicles, episodes, learning_rate, discount_factor, epsilon)
+
+    # Simulate vehicle movement and print results
+    for vehicle in vehicles:
+        simulate_vehicle_movement(graph, vehicle)
+        print(f"Vehicle from {vehicle.current_node} to {vehicle.destination}:")
+        print("Path taken:", vehicle.path)
+        print("Total time:", vehicle.time)
+
+    # Calculate and print total time after all vehicles have moved
+    total_time = sum(vehicle.time for vehicle in vehicles)
+    print(f"Total time taken for all vehicles: {total_time}")
+
+# Execute the main function
+main()
